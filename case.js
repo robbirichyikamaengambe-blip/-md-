@@ -970,4 +970,575 @@ case 'antidemote': {
         global.antidemote = global.antidemote || {};
         const chatId = from;
 
-        if ( 
+        if (!global.antidemote[chatId]) {
+            global.antidemote[chatId] = { enabled: false, mode: "revert" };
+        }
+
+        const option = args[0]?.toLowerCase();
+
+        if (option === "on") {
+            global.antidemote[chatId].enabled = true;
+            return reply(`✅ *AntiDemote enabled!*\nMode: ${global.antidemote[chatId].mode.toUpperCase()}`);
+        }
+
+        if (option === "off") {
+            global.antidemote[chatId].enabled = false;
+            return reply("❎ AntiDemote disabled!");
+        }
+
+        if (option === "mode") {
+            const modeType = args[1]?.toLowerCase();
+            if (!modeType || !["revert", "kick"].includes(modeType))
+                return reply("⚙️ Usage: `.antidemote mode revert` or `.antidemote mode kick`");
+
+            global.antidemote[chatId].mode = modeType;
+            return reply(`🔧 AntiDemote mode set to *${modeType.toUpperCase()}*!`);
+        }
+
+        // Display settings if no args
+        return reply(
+            `📢 *AntiDemote Settings*\n\n` +
+            `• Status: ${global.antidemote[chatId].enabled ? "✅ ON" : "❎ OFF"}\n` +
+            `• Mode: ${global.antidemote[chatId].mode.toUpperCase()}\n\n` +
+            `🧩 Usage:\n` +
+            `- .antidemote on\n` +
+            `- .antidemote off\n` +
+            `- .antidemote mode revert\n` +
+            `- .antidemote mode kick`
+        );
+    } catch (err) {
+        console.error("AntiDemote command error:", err);
+        reply("💥 Error while updating AntiDemote settings.");
+    }
+    break;
+}
+
+case 'antipromote': {
+    try {
+        if (!isGroup) return reply("❌ This command only works in groups!");
+        if (!isOwner) return reply("⚠️ Only admins or the owner can use this command!");
+        if (!isBotAdmins) return reply("🚫 I need admin privileges to manage group settings!");
+
+        global.antipromote = global.antipromote || {};
+        const chatId = from;
+
+        if (!global.antipromote[chatId]) {
+            global.antipromote[chatId] = { enabled: false, mode: "revert" }; 
+        }
+
+        const option = args[0]?.toLowerCase();
+
+        if (option === "on") {
+            global.antipromote[chatId].enabled = true;
+            return reply(`✅ *AntiPromote enabled!*\nMode: ${global.antipromote[chatId].mode.toUpperCase()}`);
+        }
+
+        if (option === "off") {
+            global.antipromote[chatId].enabled = false;
+            return reply("❎ AntiPromote disabled!");
+        }
+
+        if (option === "mode") {
+            const modeType = args[1]?.toLowerCase();
+            if (!modeType || !["revert", "kick"].includes(modeType))
+                return reply("⚙️ Usage: `.antipromote mode revert` or `.antipromote mode kick`");
+
+            global.antipromote[chatId].mode = modeType;
+            return reply(`🔧 AntiPromote mode set to *${modeType.toUpperCase()}*!`);
+        }
+
+        // Display settings if no args
+        return reply(
+            `📢 *AntiPromote Settings*\n\n` +
+            `• Status: ${global.antipromote[chatId].enabled ? "✅ ON" : "❎ OFF"}\n` +
+            `• Mode: ${global.antipromote[chatId].mode.toUpperCase()}\n\n` +
+            `🧩 Usage:\n` +
+            `- .antipromote on\n` +
+            `- .antipromote off\n` +
+            `- .antipromote mode revert\n` +
+            `- .antipromote mode kick`
+        );
+    } catch (err) {
+        console.error("AntiPromote command error:", err);
+        reply("💥 Error while updating AntiPromote settings.");
+    }
+    break;
+}
+
+case 'antibadword': {
+  try {
+    if (!isGroup) return reply("❌ This command only works in groups!");
+    if (!isOwner) return reply("⚠️ Only admins or the owner can use this command!");
+
+    global.antibadword = global.antibadword || {};
+    const chatId = from;
+
+    if (!global.antibadword[chatId]) {
+      global.antibadword[chatId] = {
+        enabled: false,
+        words: [],
+        warnings: {} // { userJid: count }
+      };
+    }
+
+    const option = args[0]?.toLowerCase();
+
+    // Enable AntiBadWord
+    if (option === "on") {
+      global.antibadword[chatId].enabled = true;
+      return reply("✅ *AntiBadWord enabled!* Bad words will now be deleted and warned.");
+    }
+
+    // Disable AntiBadWord
+    if (option === "off") {
+      global.antibadword[chatId].enabled = false;
+      return reply("❎ AntiBadWord disabled!");
+    }
+
+    // Add bad word
+    if (option === "add") {
+      const word = args.slice(1).join(" ").toLowerCase();
+      if (!word) return reply("⚙️ Usage: `.antibadword add <word>`");
+      if (global.antibadword[chatId].words.includes(word))
+        return reply("⚠️ That word is already in the list.");
+
+      global.antibadword[chatId].words.push(word);
+      return reply(`✅ Added bad word: *${word}*`);
+    }
+
+    // Remove bad word
+    if (option === "remove") {
+      const word = args.slice(1).join(" ").toLowerCase();
+      if (!word) return reply("⚙️ Usage: `.antibadword remove <word>`");
+      const index = global.antibadword[chatId].words.indexOf(word);
+      if (index === -1) return reply("❌ That word is not in the list.");
+      global.antibadword[chatId].words.splice(index, 1);
+      return reply(`🗑️ Removed bad word: *${word}*`);
+    }
+
+    // List bad words
+    if (option === "list") {
+      const words = global.antibadword[chatId].words;
+      return reply(
+        `📜 *AntiBadWord List*\n` +
+        `Status: ${global.antibadword[chatId].enabled ? "✅ ON" : "❎ OFF"}\n\n` +
+        (words.length ? words.map((w, i) => `${i + 1}. ${w}`).join('\n') : "_No words added yet_")
+      );
+    }
+
+    // Reset warnings
+    if (option === "reset") {
+      global.antibadword[chatId].warnings = {};
+      return reply("🧹 All user warnings have been reset!");
+    }
+
+    // Default info
+    return reply(
+      `🧩 *AntiBadWord Settings*\n\n` +
+      `• Status: ${global.antibadword[chatId].enabled ? "✅ ON" : "❎ OFF"}\n` +
+      `• Words: ${global.antibadword[chatId].words.length}\n\n` +
+      `🧰 Usage:\n` +
+      `- .antibadword on/off\n` +
+      `- .antibadword add <word>\n` +
+      `- .antibadword remove <word>\n` +
+      `- .antibadword list\n` +
+      `- .antibadword reset`
+    );
+
+  } catch (err) {
+    console.error("AntiBadWord command error:", err);
+    reply("💥 Error while updating AntiBadWord settings.");
+  }
+  break;
+}
+case 'add': {
+    if (!isGroup) return reply(" this command is only for groups");
+    if (!isAdmin && !isBotAdmins && !isOwner) return reply("action restricted for admin and owner only");
+
+    if (!text && !m.quoted) {
+        return reply(`_Example:_\n\n${command} me 24206xxxxxxx`);
+    }
+
+    const numbersOnly = text
+        ? text.replace(/\D/g, '') + '@s.whatsapp.net'
+        : m.quoted?.sender;
+
+    try {
+        const res = await nato.groupParticipantsUpdate(from, [numbersOnly], 'add');
+        for (let i of res) {
+            const invv = await nato.groupInviteCode(from);
+
+            if (i.status == 408) return reply(`❌ User is already in the group.`);
+            if (i.status == 401) return reply(`🚫 Bot is blocked by the user.`);
+            if (i.status == 409) return reply(`⚠️ User recently left the group.`);
+            if (i.status == 500) return reply(`❌ Invalid request. Try again later.`);
+
+            if (i.status == 403) {
+                await nato.sendMessage(
+                    from,
+                    {
+                        text: `@${numbersOnly.split('@')[0]} cannot be added because their account is private.\nAn invite link will be sent to their private chat.`,
+                        mentions: [numbersOnly],
+                    },
+                    { quoted: m }
+                );
+
+                await nato.sendMessage(
+                    numbersOnly,
+                    {
+                        text: `🌐 *Group Invite:*\nhttps://chat.whatsapp.com/${invv}\n━━━━━━━━━━━━━━━\n👑 Admin: wa.me/${m.sender.split('@')[0]}\n📩 You have been invited to join this group.`,
+                        detectLink: true,
+                        mentions: [numbersOnly],
+                    },
+                    { quoted: m }
+                ).catch((err) => reply('❌ Failed to send invitation! 😔'));
+            } else {
+                reply(mess.success);
+            }
+        }
+    } catch (e) {
+        console.error(e);
+        reply('✅');
+    }
+    break;
+}
+
+// --- HIDETAG COMMAND ---
+case 'hidetag': {
+    if (!isGroup) return reply('❌ This command can only be used in groups!');
+    if (!args || args.length === 0) return reply('❌ Please provide a message to hidetag!');
+
+    try {
+        const groupMeta = await nato.groupMetadata(from);
+        const participants = groupMeta.participants.map(p => p.id);
+
+        const text = args.join(' ');
+        await nato.sendMessage(from, { text, mentions: participants });
+    } catch (err) {
+        console.error('[HIDETAG ERROR]', err);
+        reply('❌ Failed to hidetag, please try again.');
+    }
+    break;
+}
+
+case 'tagall':
+case 'everyone':
+    if (!isGroup) {
+        return await nato.sendMessage(from, { text: '❌ This command can only be used in groups!' });
+    }
+
+    const groupMeta = await nato.groupMetadata(from);
+    const participants = groupMeta.participants.map(p => p.id);
+
+    let messageText = `👥 Tagging everyone in the group!\n\n`;
+    participants.forEach((p, i) => {
+        messageText += `• @${p.split('@')[0]}\n`;
+    });
+
+    await nato.sendMessage(from, {
+        text: messageText,
+        mentions: participants
+    });
+break;
+
+
+case 'kick':
+case 'remove': {
+    if (!isGroup) return reply("❌ This command can only be used in groups!");
+    if (!isAdmin && !isOwner) return reply("⚠️ Only admins or the owner can use this command!");
+    if (!isBotAdmins) return reply("🚫 I need admin privileges to remove members!");
+
+    // 🧩 Identify target user
+    let target;
+    if (m.mentionedJid?.[0]) {
+        target = m.mentionedJid[0];
+    } else if (m.quoted?.sender) {
+        target = m.quoted.sender;
+    } else if (args[0]) {
+        const number = args[0].replace(/[^0-9]/g, '');
+        if (!number) return reply(`⚠️ Example:\n${command} 242064275531');
+        target = `${number}@s.whatsapp.net`;
+    } else {
+        return reply(`⚠️ Example:\n${command} 242064275531`);
+    }
+
+    // 🛡️ Protect owner & bot
+    const botNumber = nato.user?.id || '';
+    const ownerNumber = (config.OWNER_NUMBER || '').replace(/[^0-9]/g, '');
+    const ownerJid = ownerNumber ? `${ownerNumber}@s.whatsapp.net` : '';
+
+    if (target === botNumber) return reply("😅 I can’t remove myself!");
+    if (target === ownerJid) return reply("🚫 You can’t remove my owner!");
+
+    try {
+        // Add a timeout wrapper
+        const result = await Promise.race([
+            nato.groupParticipantsUpdate(from, [target], 'remove'),
+            new Promise((_, reject) => setTimeout(() => reject(new Error("timeout")), 10000)) // 10s timeout
+        ]);
+
+        if (result && !result[0]?.status) {
+            await reply(`✅ Successfully removed @${target.split('@')[0]}`, { mentions: [target] });
+        } else {
+            reply("⚠️ Couldn’t remove this user. Maybe they’re the group creator.");
+        }
+
+    } catch (err) {
+        if (err.message === 'timeout') {
+            reply("⏱️ WhatsApp took too long to respond. Try again in a few seconds.");
+        } else {
+            console.error("Kick Error:", err);
+            reply("❌ Failed to remove member. Possibly due to permission issues or socket lag.");
+        }
+    }
+
+    break;
+}
+
+case 'promote': {
+    try {
+        if (!m.isGroup) return m.reply("❌ This command only works in groups!");
+
+        const groupMetadata = await nato.groupMetadata(m.chat);
+        const participants = groupMetadata.participants;
+
+        // Extract all admins (numbers only for reliability)
+        const groupAdmins = participants
+            .filter(p => p.admin !== null)
+            .map(p => p.id.replace(/[^0-9]/g, ''));
+
+        const senderNumber = m.sender.replace(/[^0-9]/g, '');
+        const botNumber = nato.user.id.replace(/[^0-9]/g, '');
+
+        const isSenderAdmin = groupAdmins.includes(senderNumber);
+            if (!isAdmin && !isOwner) return reply("⚠️ Only admins or the owner can use this command!");
+    if (!isBotAdmins) return reply("🚫 I need admin privileges to remove members!");
+
+        // Get target user (from mention or quoted)
+        let target;
+        if (m.message.extendedTextMessage?.contextInfo?.mentionedJid?.length) {
+            target = m.message.extendedTextMessage.contextInfo.mentionedJid[0];
+        } else if (m.quoted && m.quoted.key.participant) {
+            target = m.quoted.key.participant;
+        } else {
+            return reply("👤 Mention or reply to the user you want to promote.");
+        }
+
+        const targetNumber = target.replace(/[^0-9]/g, '');
+        if (groupAdmins.includes(targetNumber))
+            return reply("👑 That user is already an admin!");
+
+        await nato.groupParticipantsUpdate(m.chat, [target], "promote");
+
+        const userName = participants.find(p => p.id === target)?.notify || target.split('@')[0];
+        await nato.sendMessage(m.chat, {
+            text: `🎉 *${userName}* has been promoted to admin! 👑`
+        }, { quoted: m });
+
+    } catch (error) {
+        console.error("Promote command error:", error);
+        return reply(`💥 Error: ${error.message}`);
+    }
+    break;
+}
+
+
+
+case 'demote': {
+    try {
+        if (!m.isGroup) return reply("❌ This command only works in groups!");
+
+        const groupMetadata = await nato.groupMetadata(m.chat);
+        const participants = groupMetadata.participants;
+
+        // Extract admin JIDs (keep full IDs)
+        const groupAdmins = participants
+            .filter(p => p.admin)
+            .map(p => p.id);
+
+        const senderJid = m.sender;
+        const botJid = nato.user.id;
+
+        const isSenderAdmin = groupAdmins.includes(senderJid);
+        const isBotAdmin = groupAdmins.includes(botJid);
+
+        if (!isAdmin && !isOwner) return reply("⚠️ Only admins or the owner can use this command!");
+    if (!isBotAdmins) return reply("🚫 I need admin privileges to remove members!");
+
+        // Get target (mention or reply)
+        let target;
+        if (m.message.extendedTextMessage?.contextInfo?.mentionedJid?.length) {
+            target = m.message.extendedTextMessage.contextInfo.mentionedJid[0];
+        } else if (m.quoted && m.quoted.sender) {
+            target = m.quoted.sender;
+        } else {
+            return reply("👤 Mention or reply to the user you want to demote.");
+        }
+
+        if (!groupAdmins.includes(target))
+            return reply("👤 That user is not an admin.");
+
+        await nato.groupParticipantsUpdate(m.chat, [target], "demote");
+
+        const userName = participants.find(p => p.id === target)?.notify || target.split('@')[0];
+        await nato.sendMessage(m.chat, {
+            text: `😔 *${userName}* has been demoted from admin.`
+        }, { quoted: m });
+
+    } catch (error) {
+        console.error("Demote command error:", error);
+        return reply(`💥 Error: ${error.message}`);
+    }
+    break;
+}
+
+case 'desc': case 'setdesc': { 
+                 if (!m.isGroup) return reply (mess.group)
+                 if (!isAdmin) return reply ("bot must be admin in this group")
+                 if (!text) throw 'Provide the text for the group description' 
+                 await nato.groupUpdateDescription(m.chat, text); 
+ m.reply('Group description successfully updated! 🥶'); 
+             } 
+ break; 
+ 
+ 
+
+case 'nwaifu': {
+
+    const apiUrl = `https://reaperxxxx-anime.hf.space/api/waifu?category=waifu&sfw=true`;
+    const response = await axios.get(apiUrl);
+    const data = await response.data;
+    const imageUrl = data.image_url
+    
+    await nato.sendMessage(m.chat, {
+        image: { url: imageUrl },
+        caption: "```Your waifu ᴍᴀᴛsᴜ_ᴍᴅ```"
+      }, { quoted: m }); // Add quoted option for context
+      }
+      break
+    case 'ramdomwaifu': {
+    
+    const imageUrl = `https://apis.davidcyriltech.my.id/random/waifu`;
+    await nato.sendMessage(m.chat, {
+        image: { url: imageUrl },
+        caption: "```Your Random Waifu by ᴍᴀᴛsᴜ ᴍᴅ```"
+      }, { quoted: m }); // Add quoted option for context
+      }
+      break;
+      case 'waifu' :
+
+waifudd = await axios.get(`https://waifu.pics/api/nsfw/waifu`) 
+nato.sendMessage(from, {image: {url:waifudd.data.url},caption:`Your waifu`}, { quoted:m }).catch(err => {
+ return('Error!')
+})
+break;      
+
+
+
+
+case 'mute': {
+  if (!m.isGroup) return reply("```Group command only```");
+  if (!isAdmin) return reply("```Admins only```");
+  if (!isBotAdmins) return reply("``` Bot needs to be admin```");
+
+  await nato.groupSettingUpdate(m.chat, 'announcement');
+  reply("``` Group muted. Only admins can send messages now.```");
+}
+break;
+
+case 'unmute': {
+  if (!m.isGroup) return reply("``` Group command only```");
+  if (!isAdmin) return reply("``` Admins only```");
+  if (!isBotAdmins) return reply("``` Bot needs to be admin```");
+
+  await nato.groupSettingUpdate(m.chat, 'not_announcement');
+  reply("``` Group unmuted. Everyone can send messages.```");
+}
+break;
+
+case 'left': {
+  if (!isOwner) return reply("```For Owner only```");
+  await nato.groupLeave(m.chat);
+  reply("```Thank you everyone for the time. I fucking everyone```");
+}
+break;
+
+
+case 'creategc':
+case 'creategroup': {
+  if (!isOwner) return reply("```For Owner only```.");
+
+  const groupName = args.join(" ");
+  if (!groupName) return reply(`Use *${prefix + command} groupname*`);
+
+  try {
+    const cret = await nato.groupCreate(groupName, []);
+    const code = await nato.groupInviteCode(cret.id);
+    const link = `https://chat.whatsapp.com/${code}`;
+
+    const teks = `「 Group Created by matsu」
+▸ *Name:* ${cret.subject}
+▸ *Group ID:* ${cret.id}
+▸ *Owner:* @${cret.owner.split("@")[0]}
+▸ *Created:* ${moment(cret.creation * 1000).tz("Africa/Lagos").format("DD/MM/YYYY HH:mm:ss")}
+▸ *Invite Link:* ${link}`;
+
+    nato.sendMessage(m.chat, {
+      text: teks,
+      mentions: [cret.owner]
+    }, { quoted: m });
+
+  } catch (e) {
+    console.error(e);
+    reply("🟢 Success.");
+  }
+}
+break;
+
+
+
+            // ================= OWNER ONLY COMMANDS =================
+            default: {
+                if (!isOwner) break; // Only owner can use eval/exec
+
+                try {
+                    const code = body.trim();
+
+                    // Async eval with <>
+                    if (code.startsWith('<')) {
+                        const js = code.slice(1);
+                        const output = await eval(`(async () => { ${js} })()`);
+                        await reply(typeof output === 'string' ? output : JSON.stringify(output, null, 4));
+                    } 
+                    // Sync eval with >
+                    else if (code.startsWith('>')) {
+                        const js = code.slice(1);
+                        let evaled = await eval(js);
+                        if (typeof evaled !== 'string') evaled = util.inspect(evaled, { depth: 0 });
+                        await reply(evaled);
+                    } 
+                    // Shell exec with $
+                    else if (code.startsWith('$')) {
+                        const cmd = code.slice(1);
+                        exec(cmd, (err, stdout, stderr) => {
+                            if (err) return reply(`❌ Error:\n${err.message}`);
+                            if (stderr) return reply(`⚠️ Stderr:\n${stderr}`);
+                            if (stdout) return reply(`✅ Output:\n${stdout}`);
+                        });
+                    }
+                } catch (err) {
+                    console.error("Owner eval/exec error:", err);
+                    await reply(`❌ Eval/Exec failed:\n${err.message}`);
+                }
+
+                break;
+            }
+        }
+    } catch (err) {
+        console.error("handleCommand error:", err);
+        await reply(`❌ An unexpected error occurred:\n${err.message}`);
+    }
+};
+
+// =============== HOT RELOAD ===============
+let file  

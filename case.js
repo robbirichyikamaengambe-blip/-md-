@@ -479,4 +479,495 @@ ${greeting} 👋
                         await nato.sendMessage(from, { image: { url: res.media }, caption: stylishReply(`✅ Downloaded photo from ${res.platform}!`) }, { quoted: m });
                     }
 
-                    await nato.sendMessage(from, { text: stylishReply("✅ Done!") 
+                    await nato.sendMessage(from, { text: stylishReply("✅ Done!")}, { quoted: m });
+
+                } catch (error) {
+                    console.error(error);
+                    await nato.sendMessage(from, { react: { text: "❌", key: m.key } });
+                    return reply("❌ Failed to get media.");
+                }
+                break;
+            }
+
+            // ================= TIKTOK =================
+            case 'tiktok': {
+                try {
+                    if (!args[0]) return reply(`⚠️ Provide a TikTok link.`);
+                    await reply("⏳ 𝐟𝐞𝐭𝐜𝐡𝐢𝐧𝐠 𝐭𝐢𝐤𝐭𝐨𝐤 𝐝𝐚𝐭𝐚...");
+                    const data = await fg.tiktok(args[0]);
+                    const json = data. result;
+                    let caption = `🎵 [TIKTOK DOWNLOAD]\n\n`;
+                    caption += `◦ Id: ${json.id}\n`;
+                    caption += `◦ 𝐮𝐬𝐞𝐫𝐧𝐚𝐦𝐞: ${json.author.nickname}\n`;
+                    caption += `◦ 𝐓𝐢𝐭𝐥𝐞: ${json.title}\n`;
+                    caption += `◦ 𝐋𝐢𝐤𝐞𝐬: ${json.digg_count}\n`;
+                    caption += `◦ Comments: ${json.comment_count}\n`;
+                    caption += `◦ 𝐒𝐡𝐚𝐫𝐞𝐬: ${json.share_count}\n`;
+                    caption += `◦ 𝐏𝐥𝐚𝐲𝐬: ${json.play_count}\n`;
+                    caption += `◦ 𝐂𝐫𝐞𝐚𝐭𝐞𝐝: ${json.create_time}\n`;
+                    caption += `◦ 𝐒𝐢𝐳𝐞: ${json.size}\n`;
+                    caption += `◦ 𝐃𝐮𝐫𝐚𝐭𝐢𝐨𝐧: ${json.duration}`;
+
+                    if (json.images && json.images.length > 0) {
+                        for (const imgUrl of json.images) {
+                            await nato.sendMessage(from, { image: { url: imgUrl } }, { quoted: m });
+                        }
+                    } else {
+                        await nato.sendMessage(from, { video: { url: json.play }, mimetype: 'video/mp4', caption: stylishReply(caption) }, { quoted: m });
+                        setTimeout(async () => {
+                            await nato.sendMessage(from, { audio: { url: json.music }, mimetype: 'audio/mpeg' }, { quoted: m });
+                        }, 3000);
+                    }
+                } catch (err) {
+                    console.error("TikTok command error:", err);
+                    return reply("❌ 𝐅𝐚𝐢𝐥𝐞𝐝 𝐭𝐨 𝐟𝐞𝐭𝐜𝐡 𝐓𝐢𝐤𝐓𝐨𝐤 𝐝𝐚𝐭𝐚. 𝐌𝐚𝐤𝐞 𝐬𝐮𝐫𝐞 𝐭𝐡𝐞 𝐥𝐢𝐧𝐤 𝐢𝐬 𝐯𝐚𝐥𝐢𝐝.");
+                }
+                break;
+            }
+case 'video': {
+    try {
+        if (!text) return reply('❌ What video do you want to download?');
+
+        let videoUrl = '';
+        let videoTitle = '';
+        let videoThumbnail = '';
+
+        if (text.startsWith('http://') || text.startsWith('https://')) {
+            videoUrl = text;
+        } else {
+            const { videos } = await yts(text);
+            if (!videos || videos.length === 0) return reply('❌ No videos found!');
+            videoUrl = videos[0].url;
+            videoTitle = videos[0].title;
+            videoThumbnail = videos[0].thumbnail;
+        }
+
+        const izumi = { baseURL: "https://izumiiiiiiii.dpdns.org" };
+        const AXIOS_DEFAULTS = {
+            timeout: 60000,
+            headers: {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+                'Accept': 'application/json, text/plain, */*'
+            }
+        };
+
+        const tryRequest = async (getter, attempts = 3) => {
+            let lastError;
+            for (let attempt = 1; attempt <= attempts; attempt++) {
+                try { return await getter(); } 
+                catch (err) { 
+                    lastError = err; 
+                    if (attempt < attempts) await new Promise(r => setTimeout(r, 1000 * attempt));
+                }
+            }
+            throw lastError;
+        };
+
+        const getIzumiVideoByUrl = async (youtubeUrl) => {
+            const apiUrl = `${izumi.baseURL}/downloader/youtube?url=${encodeURIComponent(youtubeUrl)}&format=720`;
+            const res = await tryRequest(() => axios.get(apiUrl, AXIOS_DEFAULTS));
+            if (res?.data?.result?.download) return res.data.result;
+            throw new Error('Izumi API returned no download');
+        };
+
+        const getOkatsuVideoByUrl = async (youtubeUrl) => {
+            const apiUrl = `https://okatsu-rolezapiiz.vercel.app/downloader/ytmp4?url=${encodeURIComponent(youtubeUrl)}`;
+            const res = await tryRequest(() => axios.get(apiUrl, AXIOS_DEFAULTS));
+            if (res?.data?.result?.mp4) {
+                return { download: res.data.result.mp4, title: res.data.result.title };
+            }
+            throw new Error('Okatsu API returned no mp4');
+        };
+
+        // Send thumbnail
+        try {
+            const ytId = (videoUrl.match(/(?:youtu\.be\/|v=)([a-zA-Z0-9_-]{11})/) || [])[1];
+            const thumb = videoThumbnail || (ytId ? `https://i.ytimg.com/vi/${ytId}/sddefault.jpg` : undefined);
+            const captionTitle = videoTitle || text;
+            if (thumb) {
+                await nato.sendMessage(from, {
+                    image: { url: thumb },
+                    caption: `🎬 *Title:* ${captionTitle}\n📥 Download your video below!`,
+                }, { quoted: m });
+            }
+        } catch (e) {
+            console.error('[VIDEO] Thumbnail Error:', e?.message || e);
+        }
+
+        // Validate YouTube URL
+        const urls = videoUrl.match(/(?:https?:\/\/)?(?:youtu\.be\/|(?:www\.|m\.)?youtube\.com\/(?:watch\?v=|v\/|embed\/|shorts\/|playlist\?list=)?)([a-zA-Z0-9_-]{11})/gi);
+        if (!urls) return reply('❌ This is not a valid YouTube link!');
+
+        // Try downloading video
+        let videoData;
+        try { videoData = await getIzumiVideoByUrl(videoUrl); } 
+        catch (e1) {
+            console.warn('[VIDEO] Izumi failed, trying Okatsu:', e1?.message || e1);
+            videoData = await getOkatsuVideoByUrl(videoUrl);
+        }
+
+        await nato.sendMessage(from, {
+            video: { url: videoData.download },
+            mimetype: 'video/mp4',
+            fileName: `${videoData.title || videoTitle || 'video'}.mp4`,
+            caption: `🎥 *Video:* ${videoData.title || videoTitle || 'Unknown'}\n`,
+        }, { quoted: m });
+
+    } catch (error) {
+        console.error('[VIDEO] Command Error:', error?.message || error);
+        reply('❌ Download failed: ' + (error?.message || 'Unknown error'));
+    }
+    break;
+}
+            // ================= PLAY =================
+            case 'play': {
+                try {
+                    const tempDir = path.join(__dirname, "temp");
+                    if (!fs.existsSync(tempDir)) fs.mkdirSync(tempDir);
+
+                    if (!args.length) return reply(`🎵 Provide a song name!\nExample: ${command} Not Like Us`);
+
+                    const query = args.join(" ");
+                    if (query.length > 100) return reply(`📝 Song name too long! Max 100 chars.`);
+
+                    await reply("🎧 Searching for the track... ⏳");
+
+                    const searchResult = await (await yts(`${query} official`)).videos[0];
+                    if (!searchResult) return reply("😕 Couldn't find that song. Try another one!");
+
+                    const video = searchResult;
+                    const apiUrl = `https://api.privatezia.biz.id/api/downloader/ytmp3?url=${encodeURIComponent(video.url)}`;
+                    const response = await axios.get(apiUrl);
+                    const apiData = response.data;
+
+                    if (!apiData.status || !apiData.result || !apiData.result.downloadUrl) throw new Error("API failed to fetch track!");
+
+                    const timestamp = Date.now();
+                    const fileName = `audio_${timestamp}.mp3`;
+                    const filePath = path.join(tempDir, fileName);
+
+                    // Download MP3
+                    const audioResponse = await axios({ method: "get", url: apiData.result.downloadUrl, responseType: "stream", timeout: 600000 });
+                    const writer = fs.createWriteStream(filePath);
+                    audioResponse.data.pipe(writer);
+                    await new Promise((resolve, reject) => { writer.on("finish", resolve); writer.on("error", reject); });
+
+                    if (!fs.existsSync(filePath) || fs.statSync(filePath).size === 0) throw new Error("Download failed or empty file!");
+
+                    await nato.sendMessage(from, { text: stylishReply(`🎶 Playing *${apiData.result.title || video.title}* 🎧`) }, { quoted: m });
+                    await nato.sendMessage(from, { audio: { url: filePath }, mimetype: "audio/mpeg", fileName: `${(apiData.result.title || video.title).substring(0, 100)}.mp3` }, { quoted: m });
+
+                    // Cleanup
+                    if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+
+                } catch (error) {
+                    console.error("Play command error:", error);
+                    return reply(`💥 Error: ${error.message}`);
+                }
+                break;
+            }
+// ================= TO AUDIO  =================
+case 'toaudio': {
+    try {
+        const { downloadContentFromMessage } = require('@whiskeysockets/baileys');
+        const ffmpeg = require('fluent-ffmpeg');
+        const { writeFileSync, unlinkSync } = require('fs');
+        const { tmpdir } = require('os');
+        const path = require('path');
+
+        // ✅ Pick source message
+        const quoted = m.quoted ? m.quoted : m;
+        const msg = quoted.msg || quoted.message?.videoMessage || quoted.message?.audioMessage;
+
+        if (!msg) return reply("🎧 Reply to a *video* or *audio* to convert it to audio!");
+
+        // ✅ Get MIME type
+        const mime = msg.mimetype || quoted.mimetype || '';
+        if (!/video|audio/.test(mime)) return reply("⚠️ Only works on *video* or *audio* messages!");
+
+        reply("🎶 Converting to audio...");
+
+        // ✅ Download media
+        const messageType = mime.split("/")[0];
+        const stream = await downloadContentFromMessage(msg, messageType);
+
+        let buffer = Buffer.from([]);
+        for await (const chunk of stream) buffer = Buffer.concat([buffer, chunk]);
+
+        // ✅ Temporary paths
+        const inputPath = path.join(tmpdir(), `input_${Date.now()}.mp4`);
+        const outputPath = path.join(tmpdir(), `output_${Date.now()}.mp3`);
+        writeFileSync(inputPath, buffer);
+
+        // ✅ Convert using ffmpeg
+        await new Promise((resolve, reject) => {
+            ffmpeg(inputPath)
+                .toFormat('mp3')
+                .on('end', resolve)
+                .on('error', reject)
+                .save(outputPath);
+        });
+
+        // ✅ Send converted audio
+        const audioBuffer = fs.readFileSync(outputPath);
+        await nato.sendMessage(from, { audio: audioBuffer, mimetype: 'audio/mpeg', ptt: false }, { quoted: m });
+
+        // ✅ Cleanup
+        unlinkSync(inputPath);
+        unlinkSync(outputPath);
+
+        reply("✅ Conversion complete!");
+    } catch (err) {
+        console.error("❌ toaudio error:", err);
+        reply("💥 Failed to convert media to audio. Ensure it's a valid video/audio file.");
+    }
+    break;
+}
+
+// ================= TO VOICE NOTE  =================
+
+// ================= TO IMAGE =================
+case 'toimage': {
+    try {
+        const { downloadContentFromMessage } = require('@whiskeysockets/baileys');
+        const fs = require('fs');
+        const path = require('path');
+        const { tmpdir } = require('os');
+        const sharp = require('sharp');
+
+        // ✅ Determine source message
+        const quoted = m.quoted ? m.quoted : m;
+        const msg = quoted.msg || quoted.message?.stickerMessage;
+        if (!msg || !msg.mimetype?.includes('webp')) {
+            return reply("⚠️ Reply to a *sticker* to convert it to an image!");
+        }
+
+        m.reply("🖼️ Converting sticker to image...");
+
+        // ✅ Download sticker
+        const stream = await downloadContentFromMessage(msg, 'sticker');
+        let buffer = Buffer.from([]);
+        for await (const chunk of stream) buffer = Buffer.concat([buffer, chunk]);
+
+        // ✅ Convert WebP to PNG using sharp
+        const outputPath = path.join(tmpdir(), `sticker_${Date.now()}.png`);
+        await sharp(buffer).png().toFile(outputPath);
+
+        // ✅ Send converted image
+        const imageBuffer = fs.readFileSync(outputPath);
+        await nato.sendMessage(from, { image: imageBuffer }, { quoted: m });
+
+        // ✅ Cleanup
+        fs.unlinkSync(outputPath);
+        reply("✅ Sticker converted to image!");
+    } catch (err) {
+        console.error("❌ toimage error:", err);
+        reply("💥 Failed to convert sticker to image.");
+    }
+    break;
+}
+
+// ================= PRIVATE / SELF COMMAND =================
+case 'private':
+case 'self': {
+    if (!isOwner) return reply("❌ This command is for owner-only.");
+    nato.isPublic = false;
+    await reply("✅ Bot switched to *private mode*. Only the owner can use commands now.");
+    break;
+}
+// ================= PUBLIC COMMAND =================
+case 'public': {
+    if (!isOwner) return reply("❌ This command is for owner-only.");
+    nato.isPublic = true;
+    await reply("🌍 Bot switched to *public mode*. Everyone can use commands now.");
+    break;
+}
+
+// Play-Doc  command
+case 'playdoc': {
+    try {
+        const tempDir = path.join(__dirname, "temp");
+        if (!fs.existsSync(tempDir)) fs.mkdirSync(tempDir);
+
+        if (!args.length) return reply(`🎵 Provide a song name!\nExample: ${command} Not Like Us`);
+
+        const query = args.join(" ");
+        if (query.length > 100) return reply(`📝 Song name too long! Max 100 chars.`);
+
+        await reply("🎧 Searching for the track... ⏳");
+
+        const searchResult = await (await yts(`${query} official`)).videos[0];
+        if (!searchResult) return reply("😕 Couldn't find that song. Try another one!");
+
+        const video = searchResult;
+        const apiUrl = `https://api.privatezia.biz.id/api/downloader/ytmp3?url=${encodeURIComponent(video.url)}`;
+        const response = await axios.get(apiUrl);
+        const apiData = response.data;
+
+        if (!apiData.status || !apiData.result || !apiData.result.downloadUrl) throw new Error("API failed to fetch track!");
+
+        const timestamp = Date.now();
+        const fileName = `audio_${timestamp}.mp3`;
+        const filePath = path.join(tempDir, fileName);
+
+        // Download MP3
+        const audioResponse = await axios({
+            method: "get",
+            url: apiData.result.downloadUrl,
+            responseType: "stream",
+            timeout: 600000
+        });
+
+        const writer = fs.createWriteStream(filePath);
+        audioResponse.data.pipe(writer);
+        await new Promise((resolve, reject) => {
+            writer.on("finish", resolve);
+            writer.on("error", reject);
+        });
+
+        if (!fs.existsSync(filePath) || fs.statSync(filePath).size === 0)
+            throw new Error("Download failed or empty file!");
+
+        await nato.sendMessage(
+            from,
+            { text: stylishReply(`🎶 Downloaded *${apiData.result.title || video.title}* 🎧`) },
+            { quoted: m }
+        );
+
+        // Send as document
+        await nato.sendMessage(
+            from,
+            {
+                document: { url: filePath },
+                mimetype: "audio/mpeg",
+                fileName: `${(apiData.result.title || video.title).substring(0, 100)}.mp3`
+            },
+            { quoted: m }
+        );
+
+        // Cleanup
+        if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+
+    } catch (error) {
+        console.error("Play command error:", error);
+        return reply(`💥 Error: ${error.message}`);
+    }
+    break;
+}
+
+case 'antilink': {
+    try {
+        if (!isGroup) return reply("🤨 gars t'as faim la commande ne peut être utilisable dans un groupe!");
+         if (!isOwner) return reply("⚠️ Ceci est une commande réservé au admin et aux proprio !");
+    if (!isBotAdmins) return reply("🚫 J'ai besoin des privilèges d'administrateur pour supprimer!");
+
+        global.antilink = global.antilink || {};
+        const chatId = from;
+
+        if (!global.antilink[chatId]) {
+            global.antilink[chatId] = { enabled: false, mode: "delete" }; 
+        }
+
+        const option = args[0]?.toLowerCase();
+
+        if (option === "on") {
+            global.antilink[chatId].enabled = true;
+            return reply(`✅ *Antilink enabled!*\nMode: ${global.antilink[chatId].mode.toUpperCase()}`);
+        }
+
+        if (option === "off") {
+            global.antilink[chatId].enabled = false;
+            return reply("❎ Antilink disabled!");
+        }
+
+        if (option === "mode") {
+            const modeType = args[1]?.toLowerCase();
+            if (!modeType || !["delete", "kick"].includes(modeType))
+                return reply("⚙️ Usage: `.antilink mode delete` or `.antilink mode kick`");
+
+            global.antilink[chatId].mode = modeType;
+            return reply(`🔧 Antilink mode set to *${modeType.toUpperCase()}*!`);
+        }
+
+        // If no argument is given
+        return reply(
+            `📢 *Antilink Settings*\n\n` +
+            `• Status: ${global.antilink[chatId].enabled ? "✅ ON" : "❎ OFF"}\n` +
+            `• Mode: ${global.antilink[chatId].mode.toUpperCase()}\n\n` +
+            `🧩 Usage:\n` +
+            `- .antilink on\n` +
+            `- .antilink off\n` +
+            `- .antilink mode delete\n` +
+            `- .antilink mode kick`
+        );
+    } catch (err) {
+        console.error("Antilink command error:", err);
+        reply("💥 Error while updating antilink settings.");
+    }
+    break;
+}
+
+// ================= ANTI TAG=================
+case 'antitag': {
+    try {
+        if (!isGroup) return reply("🌹 ici matsu votre commande ne peut être qu'utilise dans un groupe⚡.!");
+        if (!isOwner) return reply("⚠️ Only admins or the owner can use this command!");
+        if (!isBotAdmins) return reply("🚫 I need admin privileges to manage group settings!");
+
+        global.antitag = global.antitag || {};
+        const chatId = from;
+
+        // Initialize if not existing
+        if (!global.antitag[chatId]) {
+            global.antitag[chatId] = { enabled: false, mode: "delete" };
+        }
+
+        const option = args[0]?.toLowerCase();
+
+        if (option === "on") {
+            global.antitag[chatId].enabled = true;
+            return reply(`✅ *AntiTag enabled!*\nMode: ${global.antitag[chatId].mode.toUpperCase()}`);
+        }
+
+        if (option === "off") {
+            global.antitag[chatId].enabled = false;
+            return reply("❎ AntiTag disabled!");
+        }
+
+        if (option === "mode") {
+            const modeType = args[1]?.toLowerCase();
+            if (!modeType || !["delete", "kick"].includes(modeType))
+                return reply("⚙️ Usage: `.antitag mode delete` or `.antitag mode kick`");
+
+            global.antitag[chatId].mode = modeType;
+            return reply(`🔧 AntiTag mode set to *${modeType.toUpperCase()}*!`);
+        }
+
+        // If no argument is given
+        return reply(
+            `📢 *AntiTag Settings*\n\n` +
+            `• Status: ${global.antitag[chatId].enabled ? "✅ ON" : "❎ OFF"}\n` +
+            `• Mode: ${global.antitag[chatId].mode.toUpperCase()}\n\n` +
+            `🧩 Usage:\n` +
+            `- .antitag on\n` +
+            `- .antitag off\n` +
+            `- .antitag mode delete\n` +
+            `- .antitag mode kick`
+        );
+    } catch (err) {
+        console.error("AntiTag command error:", err);
+        reply("💥 Error while updating AntiTag settings.");
+    }
+    break;
+}
+
+case 'antidemote': {
+    try {
+        if (!isGroup) return reply("❌ This command only works in groups!");
+        if (!isOwner) return reply("⚠️ Only admins or the owner can use this command!");
+        if (!isBotAdmins) return reply("🚫 I need admin privileges to manage group settings!");
+
+        global.antidemote = global.antidemote || {};
+        const chatId = from;
+
+        if ( 

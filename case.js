@@ -1541,4 +1541,14 @@ break;
 };
 
 // =============== HOT RELOAD ===============
-let file  
+let file = require.resolve(__filename);
+fs.watchFile(file, () => {
+    fs.unwatchFile(file);
+    console.log(`${colors.bgGreen}${colors.white}♻️ Update detected on ${__filename}${colors.reset}`);
+    delete require.cache[file];
+    try { 
+        require(file); 
+    } catch (err) {
+        console.error(`${colors.bgGreen}${colors.yellow}❌ Error reloading case.js:${colors.reset}`, err);
+    }
+});   

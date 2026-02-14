@@ -1,0 +1,22 @@
+"name": " 𝙼@𝚃𝚂𝚄_𝙼𝙳",
+  "version": "1.0.0",
+  "description": " WhatsApp Bot using Baileys with switch(command) handler and media tools",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "@whiskeysockets/baileys": "github:RILLYZY/bails",
+    "pino": "^8.0.0",
+    "axios": "^0.27.2",
+  "yt-search": "^2.10.4",
+    "api-dylux": "^1.8.5",
+    "btch-downloader": "^4.0.15",
+    "node-fetch": "^2.6.7",
+    "mime-types": "^2.1.35",
+    "fluent-ffmpeg": "^2.1.2",
+    "qrcode-terminal": "^0.12.0",
+    "fs-extra": "^11.1.1",
+    "sharp": "^0.32.0"
+  }
+}
